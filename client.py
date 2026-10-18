@@ -108,9 +108,9 @@ def update_progress_bar(v1, v2):
     canvas_height = canvas.winfo_height()
 
     if total == 0:
-        split.x = canvas_width // 2
+        split_x = canvas_width // 2
     else:
-        split.x = int((v1 / total) * canvas_width)
+        split_x = int((v1 / total) * canvas_width)
 
     canvas.coords(rect_left, 0, 0, split_x, canvas_height)
     canvas.coords(rect_right, split_x, 0, canvas_width, canvas_height)
@@ -138,7 +138,38 @@ def __ui_queue__():
             break
 
         if message_type == "color":
-            root.configure(bg=value)
+            if value.startswith("state:"):
+                btn["state"] = "normal"
+                _, p1, p2, my_role, bg_color = value.split(":")
+
+                if my_role == "1":
+                    lbl_yours["text"] = f"Твои клики: {p1}"
+                    lbl_enemy["text"] = f"Клики очередняры: {p2}"
+                    update_progress_bar(int(p1), int(p2))
+                else:
+                    lbl_yours["text"] = f"Твои клики: {p2}"
+                    lbl_enemy["text"] = f"Клики очередняры: {p1}"
+                    update_progress_bar(int(p2), int(p1))
+
+                if bg_color != "none":
+                    root.configure(bg=bg_color)
+                    lbl_yours.configure(bg=bg_color)
+                    lbl_enemy.configure(bg=bg_color)
+
+            elif value.startswith("win:"):
+                _, winner, role = value.split(":")
+                btn["state"] = "disabled"
+
+                reset_ui_state()
+                if role == "win":
+                    root.after(10, lambda: show_msg_box("Новая партия", "Вы победили!\nНачинается новая партия!"))
+                else:
+                    root.after(10, lambda: show_msg_box("Новая партия", f"Победил очередняра!\nНачинается новая партия!"))
+
+            elif value == "leave":
+                btn["state"] = "disabled"
+                reset_ui_state()
+                root.after(10, lambda: show_msg_box("Игра окончена", "соперник ливнул с позором гг", is_warning=True))
 
     root.after(60, __ui_queue__)
 
@@ -151,7 +182,22 @@ def left(event):
 root = Tk()
 root.title("Clash of Clicks")
 root.geometry("300x250+800+200")
+root.configure(bg="gray94")
 
+lbl_yours = Label(root, text="Твои клики: 0", font=("Arial", 10), bg="gray94")
+lbl_yours.pack(pady=(5, 0))
+
+lbl_enemy = Label(root, text="Клики очередняры: 0", font=("Arial", 10), bg="gray94")
+lbl_enemy.pack(pady=(0, 5))
+
+canvas = Canvas(root, height=20, bg="grey", bd=0, highlightthickness=0)
+canvas.pack(fill=X, padx=10, pady=10)
+
+rect_left = canvas.create_rectangle(0, 0, 140, 20, fill="red", width=0)
+rect_right = canvas.create_rectangle(140, 0, 280, 20, fill="blue", width=0)
+
+root.update_idletasks()
+update_progress_bar(0, 0)
 
 btn = ttk.Button(root, text="", command=change_color    )
 btn.pack(expand=True, ipadx=10, ipady=10)

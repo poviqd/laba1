@@ -1,2 +1,2 @@
 # laba1
-laba1
+Simple game about outclicking your enemy
