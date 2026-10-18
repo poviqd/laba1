@@ -21,18 +21,32 @@ WEBSOCKET_PORT = 8765
 
 async def discover_server():
     loop = asyncio.get_running_loop()
+
+    broadcast_addresses = ["255.255.255.255"]
+    try:
+        hostname = socket.gethostname()
+        _, _, ip_addresses = socket.gethostbyname_ex(hostname)
+
+        for ip in ip_addresses:
+            if ip.startswith("192.168.") or ip.startswith("10.") or ip.startswith("172."):
+                parts = ip.split(".")
+                parts[-1] = "255"
+                broadcast_addresses.append(".".join(parts))
+    except Exception as e:
+        print(f"Ошибка определения интерфейсов: {e}")
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.bind(("", 0))
     sock.setblocking(False)
 
     try:
-        await loop.sock_sendto(
-            sock,
-            b"COLOR_APP_DISCOVER",
-            ("255.255.255.255", DISCOVERY_PORT),
-        )
-
+        for target_ip in set(broadcast_addresses):
+            await loop.sock_sendto(
+                sock,
+                b"COLOR_APP_DISCOVER",
+                (target_ip, DISCOVERY_PORT),
+            )
         try:
             data, addr = await asyncio.wait_for(
                 loop.sock_recvfrom(sock, 1024),
