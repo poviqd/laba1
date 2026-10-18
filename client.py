@@ -4,12 +4,13 @@ import socket
 import threading
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
 import random
 
 from websockets.asyncio.client import connect
 
 
-COLORS = ["red", "green", "blue", "yellow", "purple", "orange", "pink", "cyan"]
+COLORS = ["green", "yellow", "purple", "orange", "pink", "cyan"]
 
 ui_queue = queue.Queue()
 loop_ref = {}
@@ -73,6 +74,8 @@ async def network_client():
 
             async for color in websocket:
                 ui_queue.put(("color", color))
+    except Exception as e:
+        print(e)
     finally:
         websocket_ref.pop("ws", None)
 
@@ -96,8 +99,36 @@ def change_color():
 
     color = random.choice(COLORS)
 
-    asyncio.run_coroutine_threadsafe(websocket.send(color), loop)
+    asyncio.run_coroutine_threadsafe(websocket.send(f"click:{color}"), loop)
 
+
+def update_progress_bar(v1, v2):
+    total = v1 + v2
+    canvas_width = canvas.winfo_width()
+    canvas_height = canvas.winfo_height()
+
+    if total == 0:
+        split.x = canvas_width // 2
+    else:
+        split.x = int((v1 / total) * canvas_width)
+
+    canvas.coords(rect_left, 0, 0, split_x, canvas_height)
+    canvas.coords(rect_right, split_x, 0, canvas_width, canvas_height)
+
+
+def reset_ui_state():
+    lbl_yours["text"] = "Твои клики: 0"
+    lbl_enemy["text"] = "Клики очередняры: 0"
+    root.configure(bg="gray94")
+    lbl_yours.configure(bg="gray94")
+    lbl_enemy.configure(bg="gray94")
+    update_progress_bar(0, 0)
+
+def show_msg_box(title, text, is_warning=False):
+    if is_warning:
+        messagebox.showwarning(title, text)
+    else:
+        messagebox.showinfo(title, text)
 
 def __ui_queue__():
     while True:
@@ -118,7 +149,7 @@ def left(event):
     btn["text"] = ""
 
 root = Tk()
-root.title("Button")
+root.title("Clash of Clicks")
 root.geometry("300x250+800+200")
 
 

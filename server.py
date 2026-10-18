@@ -63,8 +63,14 @@ async def handle_client(websocket):
 
                     SCORES["p1"] = 0
                     SCORES["p2"] = 0
+
                     await asyncio.sleep(0.5)
                     GAME_OVER = False
+
+                    if ROOM["p1"] is not None and ROOM["p2"] is not None:
+                        await ROOM["p1"].send("state:0:0:1:none")
+                        await ROOM["p2"].send("state:0:0:2:none")
+
     except Exception as e:
         print(f"Ошибка сессии: {e}")
     finally:
